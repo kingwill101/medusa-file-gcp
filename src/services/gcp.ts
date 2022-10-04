@@ -1,6 +1,7 @@
 import { FileService } from "medusa-interfaces";
 import { Storage, UploadResponse } from "@google-cloud/storage";
-
+import stream from "stream";
+import { GetSignedUrlConfig } from "@google-cloud/storage";
 
 export interface CredentialBody {
   client_email?: string;
@@ -15,11 +16,13 @@ export interface GcpStorageServiceOptions {
 class GcpStorageService extends FileService {
   bucket_: any;
   credentials_: CredentialBody;
+  gcsBaseUrl: string;
 
   constructor({ }: any, options: GcpStorageServiceOptions) {
     super();
     this.bucket_ = options.bucket;
     this.credentials_ = options.credentials;
+    this.gcsBaseUrl = `https://storage.googleapis.com/${this.bucket_}/`;
   }
 
   storage() {
@@ -47,20 +50,53 @@ class GcpStorageService extends FileService {
 
   delete(fileName: string) {
     return new Promise((resolve, reject) => {
-
-      var url = fileName.split(`https://storage.googleapis.com/${this.bucket_}/`);
-
-      fileName = url[url.length - 1];
-
-      this.storage().bucket(this.bucket_).file(fileName).delete().then((res: unknown) => {
-        resolve(res);
-      }).catch((err: any) => {
-        console.error(err);
-        reject(err);
-      });
+      this.storage()
+        .bucket(this.bucket_)
+        .file(fileName)
+        .delete()
+        .then((res) => {
+          resolve(res);
+        })
+        .catch((err) => {
+          reject(err);
+        });
     });
   }
 
+  async getDownloadStream({ ...fileData }) {
+    return this.storage()
+      .bucket(this.bucket_)
+      .file(fileData.fileKey)
+      .createReadStream()
+  }
+
+  async getUploadStreamDescriptor({ ...fileData }) {
+    const fileKey = `${fileData.name}.${fileData.ext}`;
+    const pass = new stream.PassThrough();
+
+    return {
+      writeStream: pass,
+      promise: pass.pipe(this.storage().bucket(this.bucket_).file(fileKey).createWriteStream()),
+      url: `${this.gcsBaseUrl}/${fileKey}`,
+      fileKey,
+    }
+  }
+
+  async getPresignedDownloadUrl({ ...fileData }) {
+    const fileKey = fileData.fileKey;
+
+    const options = {
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + 15 * 60 * 1000,  // 15 MINUTES
+    } as GetSignedUrlConfig
+
+    
+    return (this.storage()
+                .bucket(this.bucket_)
+                .file(fileKey)
+                .getSignedUrl(options))
+  }
 }
 
 export default GcpStorageService;
