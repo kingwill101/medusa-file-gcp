@@ -32,15 +32,18 @@ __export(gcp_exports, {
 var import_medusa_interfaces = require("medusa-interfaces");
 var import_storage = require("@google-cloud/storage");
 var import_stream = __toESM(require("stream"));
+bvar import_nanoid = require("nanoid");
 class GcpStorageService extends import_medusa_interfaces.FileService {
   bucket_;
   credentials_;
   gcsBaseUrl;
+  fileNaming = "original_random";
   constructor({}, options) {
     super();
     this.bucket_ = options.bucket;
     this.credentials_ = options.credentials;
     this.gcsBaseUrl = `https://storage.googleapis.com/${this.bucket_}/`;
+    this.fileNaming = options.fileNaming || "original_random";
   }
   storage() {
     return new import_storage.Storage({
@@ -48,12 +51,29 @@ class GcpStorageService extends import_medusa_interfaces.FileService {
     });
   }
   upload(file) {
+    let fileName = file.originalname;
+    const fileWihoutExt = file.originalname.split(".").shift();
+    const fileExt = file.originalname.split(".").pop();
+    switch (this.fileNaming) {
+      case "original":
+        fileName = file.originalname;
+        break;
+      case "random":
+        fileName = (0, import_nanoid.customAlphabet)("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 10)() + `.${fileExt}`;
+        break;
+      case "original_random":
+        fileName = `${fileWihoutExt}_${(0, import_nanoid.customAlphabet)("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 10)()}.${fileExt}`;
+        break;
+      default:
+        fileName = (0, import_nanoid.customAlphabet)("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 10)() + `.${fileExt}`;
+        break;
+    }
     return new Promise((resolve, reject) => {
       this.storage().bucket(this.bucket_).upload(file.path, {
-        destination: file.originalname,
+        destination: fileName,
         public: true
       }).then((result) => {
-        const bucket_file = this.storage().bucket(this.bucket_).file(file.originalname);
+        const bucket_file = this.storage().bucket(this.bucket_).file(fileName);
         resolve({ url: bucket_file.publicUrl() });
       }).catch((err) => {
         console.error(err);
