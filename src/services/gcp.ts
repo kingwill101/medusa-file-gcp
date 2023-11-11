@@ -2,7 +2,9 @@ import { FileService } from "medusa-interfaces";
 import { Storage, UploadResponse } from "@google-cloud/storage";
 import stream from "stream";
 import { GetSignedUrlConfig } from "@google-cloud/storage";
-import { customAlphabet } from "nanoid";
+import { nanoid } from "nanoid";
+
+console.log(nanoid(10))
 
 export interface CredentialBody {
   client_email?: string;
@@ -45,13 +47,13 @@ class GcpStorageService extends FileService {
         fileName = file.originalname;
         break;
       case "random":
-        fileName = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 10)() + `.${fileExt}`;
+        fileName = nanoid(10) + `.${fileExt}`;
         break;
       case "original_random":
-        fileName = `${fileWihoutExt}_${customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 10)()}.${fileExt}`;
+        fileName = `${fileWihoutExt}_${nanoid(10)}.${fileExt}`;
         break;
       default:
-        fileName = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 10)() + `.${fileExt}`;
+        fileName = nanoid(10) + `.${fileExt}`;
         break;
     }
     return new Promise((resolve, reject) => {
