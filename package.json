@@ -1,5 +1,5 @@
 {
-  "name": "medusa-file-gcp-lulu",
+  "name": "medusa-file-gcp",
   "version": "0.0.3",
   "description": "Google cloud storage plugin for medusajs",
   "main": "index.js",
