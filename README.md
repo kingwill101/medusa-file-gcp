@@ -33,6 +33,7 @@ module.exports = {
       resolve: `medusa-plugin-gcp`,
       options: {
         bucket: process.env.GCP_BUCKET,
+        fileNaming: "original_random", // @default to original_random, options: original, random, original_random
         credentials: {
           private_key: process.env.GCP_PRIVATE_KEY,
           client_email: process.env.GCP_CLIENT_EMAIL,
