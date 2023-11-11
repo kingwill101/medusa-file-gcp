@@ -4,8 +4,6 @@ import stream from "stream";
 import { GetSignedUrlConfig } from "@google-cloud/storage";
 import { nanoid } from "nanoid";
 
-console.log(nanoid(10))
-
 export interface CredentialBody {
   client_email?: string;
   private_key?: string;
