@@ -2,6 +2,7 @@ import { FileService } from "medusa-interfaces";
 import { Storage, UploadResponse } from "@google-cloud/storage";
 import stream from "stream";
 import { GetSignedUrlConfig } from "@google-cloud/storage";
+import { customAlphabet } from "nanoid";
 
 export interface CredentialBody {
   client_email?: string;
@@ -10,19 +11,22 @@ export interface CredentialBody {
 
 export interface GcpStorageServiceOptions {
   credentials: CredentialBody,
-  bucket: string
+  bucket: string,
+  fileNaming?: "original" | "random" | "original_random",
 }
 
 class GcpStorageService extends FileService {
   bucket_: any;
   credentials_: CredentialBody;
   gcsBaseUrl: string;
+  fileNaming: "original" | "random" | "original_random" = "original_random";
 
   constructor({ }: any, options: GcpStorageServiceOptions) {
     super();
     this.bucket_ = options.bucket;
     this.credentials_ = options.credentials;
     this.gcsBaseUrl = `https://storage.googleapis.com/${this.bucket_}/`;
+    this.fileNaming = options.fileNaming || "original_random";
   }
 
   storage() {
@@ -32,13 +36,31 @@ class GcpStorageService extends FileService {
   }
 
   upload(file: { path: string; originalname: string; }) {
+    let fileName = file.originalname;
+    const fileWihoutExt = file.originalname.split('.').shift();
+    const fileExt = file.originalname.split('.').pop();
+
+    switch (this.fileNaming) {
+      case "original":
+        fileName = file.originalname;
+        break;
+      case "random":
+        fileName = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 10)() + `.${fileExt}`;
+        break;
+      case "original_random":
+        fileName = `${fileWihoutExt}_${customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 10)()}.${fileExt}`;
+        break;
+      default:
+        fileName = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 10)() + `.${fileExt}`;
+        break;
+    }
     return new Promise((resolve, reject) => {
 
       this.storage().bucket(this.bucket_).upload(file.path, {
-        destination: file.originalname,
+        destination: fileName,
         public: true
       }).then((result: UploadResponse) => {
-        const bucket_file = this.storage().bucket(this.bucket_).file(file.originalname);
+        const bucket_file = this.storage().bucket(this.bucket_).file(fileName);
         resolve({ url: bucket_file.publicUrl() });
       }).catch((err: any) => {
         console.error(err)
