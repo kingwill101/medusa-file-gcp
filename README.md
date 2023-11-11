@@ -31,6 +31,7 @@ module.exports = {
     ...otherMedusaPlugins,
     {
       resolve: `medusa-plugin-gcp`,
+      /** @type {import('medusa-plugin-gcp').PluginOptions} */
       options: {
         bucket: process.env.GCP_BUCKET,
         fileNaming: "original_random", // @default to original_random, options: original, random, original_random
